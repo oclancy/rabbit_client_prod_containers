@@ -223,7 +223,7 @@
               "azureFile": {
                   "shareName": "container-rabbitmq-share/data",
                   "storageAccountName": "firmusaz204",
-                  "storageAccountKey": "haj55pQlBxYHILVuEZ5nQF8g3tPcuJ5yoDmFBFJJojkdzXeESdPfOquzph152sLyqtQbofH9bp79FRnCi1XTGw=="
+                  "storageAccountKey": ""
               }
             },
             {
@@ -231,7 +231,7 @@
                 "azureFile": {
                     "shareName": "container-rabbitmq-share",
                     "storageAccountName": "firmusaz204",
-                    "storageAccountKey": "haj55pQlBxYHILVuEZ5nQF8g3tPcuJ5yoDmFBFJJojkdzXeESdPfOquzph152sLyqtQbofH9bp79FRnCi1XTGw=="
+                    "storageAccountKey": ""
                 }
             }
           ]
