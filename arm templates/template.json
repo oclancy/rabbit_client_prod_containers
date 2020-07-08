@@ -1,0 +1,241 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "variables": {
+      "container1name": "clients",
+      "container1image": "firmus5oftware/noderabbitclient:v1.0",
+      "rabbitcontainername": "rabbit1",
+      "rabbitcontainerimage": "rabbitmq:3-management",
+      "vnetName": "net",
+      "subnetName":"default",
+      "location": "eastus", 
+      "vnetAddressPrefix": "10.0.0.0/16",
+      "subnetAddressPrefix":"10.0.0.0/24",
+      "networkProfileName": "networkProfile1",
+      "interfaceConfigName": "eth0",
+      "interfaceIpConfig": "ipconfigprofile1"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('vnetName')]",
+            "apiVersion": "2018-07-01",
+            "location": "[variables('location')]",
+            "properties": {
+              "addressSpace": {
+                "addressPrefixes": [
+                  "[variables('vnetAddressPrefix')]"
+                ]
+              },
+              "subnets": [
+                {
+                  "name": "[variables('subnetName')]",
+                  "properties": {
+                    "addressPrefix": "[variables('subnetAddressPrefix')]",
+                    "delegations": [
+                      {
+                        "name": "DelegationService",
+                        "properties": {
+                          "serviceName": "Microsoft.ContainerInstance/containerGroups"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "[variables('networkProfileName')]",
+            "type": "Microsoft.Network/networkProfiles",
+            "apiVersion": "2018-07-01",
+            "location": "[variables('location')]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+            ],
+            "properties": {
+              "containerNetworkInterfaceConfigurations": [
+                {
+                  "name": "[variables('interfaceConfigName')]",
+                  "properties": {
+                    "ipConfigurations": [
+                      {
+                        "name": "[variables('interfaceIpConfig')]",
+                        "properties": {
+                          "subnet": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+      {
+        "name": "clients",
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2018-10-01",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "containers": [
+            {
+              "name": "consumer",
+              "properties": {
+                "image": "[variables('container1image')]",
+                "resources": {
+                  "requests": {
+                    "cpu": 1,
+                    "memoryInGb": 1.5
+                  }
+                },
+                "environmentVariables":
+                [
+                    {
+                        "name":"MODE",
+                        "value":"client"
+                    },
+                    {
+                        "name":"MESSAGE_BUS_ID",
+                        "value":"rabbit1.mydns.firmus"
+                    },
+                    {
+                        "name":"UNAME",
+                        "value":"oliver"
+                    },
+                    {
+                        "name":"PASSWD",
+                        "value":"oliver"
+                    }
+                ]
+              }
+            },
+            {
+                "name": "producer",
+                "properties": {
+                  "image": "[variables('container1image')]",
+                  "resources": {
+                    "requests": {
+                      "cpu": 1,
+                      "memoryInGb": 1.5
+                    }
+                  },
+                  "environmentVariables":
+                  [
+                      {
+                          "name":"MESSAGE_BUS_ID",
+                          "value":"rabbit1.mydns.firmus"
+                      },
+                      {
+                          "name":"UNAME",
+                          "value":"oliver"
+                      },
+                      {
+                          "name":"PASSWD",
+                          "value":"oliver"
+                      }
+                  ]
+                }
+              }
+          ],
+          "osType": "Linux",
+          "networkProfile": {
+            "Id": "[resourceId('Microsoft.Network/networkProfiles', variables('networkProfileName'))]"
+          }
+        }
+      },
+      {
+        "name": "rabbit1",
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2018-10-01",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "containers": [
+            {
+              "name": "[variables('rabbitcontainername')]",
+              "properties": {
+                "image": "[variables('rabbitcontainerimage')]",
+                "resources": {
+                  "requests": {
+                    "cpu": 1,
+                    "memoryInGb": 1.5
+                  }
+                },
+                "environmentVariables":
+                [
+                    {
+                        "name":"RABBITMQ_NODENAME",
+                        "value":"rabbit@localhost"
+                    },
+                    {
+                        "name":"RABBITMQ_CONFIG_FILE",
+                        "value":"/aci/config/rabbitmq"
+                    },
+                    {
+                        "name":"RABBITMQ_MNESIA_BASE",
+                        "value":"/aci/data/mnesia"
+                    }
+
+                ],
+                "ports": [
+                    {
+                      "port": 5672
+                    },
+                    {
+                      "port": 15672
+                    }
+                  ],
+                "volumeMounts": [
+                    {
+                      "name": "filesharevolume",
+                      "mountPath": "/aci/data"
+                    },
+                    {
+                        "name": "rabbitmqconfig",
+                        "mountPath": "/aci/config"
+                      }
+                  ]
+              }
+            }
+          ],
+          "ipAddress": {
+              "type":"Private",
+            "ip": "10.0.0.4",
+            "ports": [
+                {
+                  "port": 5672
+                },
+                {
+                  "port": 15672
+                }
+              ]
+            },
+        
+          "osType": "Linux",
+          "networkProfile": {
+            "Id": "[resourceId('Microsoft.Network/networkProfiles', variables('networkProfileName'))]"
+          },
+
+          "volumes": [
+            {
+              "name": "filesharevolume",
+              "azureFile": {
+                  "shareName": "container-rabbitmq-share/data",
+                  "storageAccountName": "firmusaz204",
+                  "storageAccountKey": "haj55pQlBxYHILVuEZ5nQF8g3tPcuJ5yoDmFBFJJojkdzXeESdPfOquzph152sLyqtQbofH9bp79FRnCi1XTGw=="
+              }
+            },
+            {
+                "name": "rabbitmqconfig",
+                "azureFile": {
+                    "shareName": "container-rabbitmq-share",
+                    "storageAccountName": "firmusaz204",
+                    "storageAccountKey": "haj55pQlBxYHILVuEZ5nQF8g3tPcuJ5yoDmFBFJJojkdzXeESdPfOquzph152sLyqtQbofH9bp79FRnCi1XTGw=="
+                }
+            }
+          ]
+        }
+      }
+    ]
+  }

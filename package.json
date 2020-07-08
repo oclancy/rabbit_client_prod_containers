@@ -1,0 +1,12 @@
+{
+  "name": "node-rabbit-client",
+  "version": "0.0.0",
+  "description": "NodeRabbitClient",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "dependencies": {
+    "amqplib": "0.5.6"
+  }
+}

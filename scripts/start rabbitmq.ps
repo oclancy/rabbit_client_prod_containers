@@ -1,0 +1,1 @@
+ docker run -d  -p 8080:15672 -p 5672:5672 --hostname firmus-rabbit -v C:/Users/olive/source/repos/ConsoleApp1/dockershare/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf --mount source=rabbit1_data,target=/var/lib/rabbitmq --name rabbit1 rabbitmq:3-management
